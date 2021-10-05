@@ -73,6 +73,16 @@ def get_pattern(struc, min_angle=10.0, max_angle=80.0, wavelength=1.5406):
 
     return signal
 
+def plot_pattern(x, y):
+    plt.figure()
+
+    plt.plot(x, y)
+
+    plt.xlabel(r'2$\Theta$', fontsize=16, labelpad=10)
+    plt.ylabel('Intensity', fontsize=16, labelpad=12)
+
+    plt.tight_layout()
+    plt.show()
 
 struc = mg.core.Structure.from_file('MnO.cif')
 
@@ -80,13 +90,4 @@ min_angle, max_angle = 10.0, 80.0
 x = np.linspace(min_angle, max_angle, 4501)
 y = get_pattern(struc, min_angle, max_angle)
 
-
-plt.figure()
-
-plt.plot(x, y)
-
-plt.xlabel(r'2$\Theta$', fontsize=16, labelpad=10)
-plt.ylabel('Intensity', fontsize=16, labelpad=12)
-
-plt.tight_layout()
-plt.show()
+plot_pattern(x, y)
