@@ -1,101 +1,91 @@
 from pymatgen.analysis.diffraction import xrd
 from scipy.ndimage import gaussian_filter1d
-<<<<<<< HEAD
-from scipy.integrate import quad
-=======
 import scipy.integrate as integrate
->>>>>>> 49958a70cf2e8ebb2096de702d137e53d5a3826e
 import matplotlib.pyplot as plt
 import pymatgen as mg
 import numpy as np
 import pandas as pd
+from IPython.display import display
+import json
 import random
 import math
-
 from gen_xrd import get_pattern
 
-<<<<<<< HEAD
+
+# THE DATA
 struc = mg.core.Structure.from_file('MnO.cif')
+
 min_angle, max_angle = 10.0, 80.0
-wavelength=1.5406
-Q_min, Q_max = 4 * math.pi * np.sin(min_angle/2) / wavelength, 4 * math.pi * np.sin(max_angle/2) / wavelength
-x = np.linspace(min_angle, max_angle, 4501)
+wavelength = 1.5406
+calculator = xrd.XRDCalculator(wavelength=wavelength)
+pattern = calculator.get_pattern(struc, two_theta_range=(min_angle, max_angle), scaled=False)
+two_angles, intensities = pattern.x, pattern.y
+Q_vals = (4 * math.pi * np.sin(np.deg2rad(two_angles/2))) / wavelength
+Q_min, Q_max = min(Q_vals), max(Q_vals)
 
-y = get_pattern(struc, min_angle, max_angle)
+#display(pd.DataFrame({"2Theta": two_angles, "Q": Q_vals, "Intensity": intensities}))
 
-=======
->>>>>>> 49958a70cf2e8ebb2096de702d137e53d5a3826e
+def I(Q):
+    """Given Q, returns the approximate intensity obtained from data."""
+    intensity = intensities[np.argmin(np.abs(Q - Q_vals))]
+    return intensity
 
-def b(q):
-    ions = ['Mn2+', 'O1-']
-    q = 5
+# THE THINGS YOU CALCULATE FROM THE MATERIAL
+def scattering_factors():
+    ions = ['Mn', 'O']
     form_factors = pd.read_csv('atomic_form_factors.csv')
-    vals = []
+    factors = []
     for i in ions:
         row = form_factors[form_factors['Element']==i]
         if not row.shape[0]:
             print("The values for calculating the atomic form factor of ", i, " are not in the table.")
             continue
-        a = row[['a1', 'a2','a3','a4']]
-        b = row[['b1', 'b2','b3','b4']]
+        a = np.array(row[['a1', 'a2','a3','a4']].iloc[0])
+        b = np.array(row[['b1', 'b2','b3','b4']].iloc[0])
         c = row['c'].iloc[0]
-        val = sum(np.array(a.iloc[0,:]) * np.exp(np.array((-b * (q / (4*math.pi))**2).iloc[0,:]))) + c
+        factors.append((a,b,c))
+    return dict(zip(ions, factors))
+factors = scattering_factors()
+
+def b(q):
+    """Returns the average scattering amplitude of the material"""
+    # NOTE: this is confirmed correct via the webpage
+    vals = []
+    for tup in factors.values():
+        a,b,c = tup
+        val = sum(a * np.exp(-b * (q/(4 * math.pi))**2)) + c
         vals.append(val)
     return np.mean(vals)
 
 
-def I(Q, data):
-    angles = np.array(data['2theta'])
 
-<<<<<<< HEAD
-# S(Q) = I(Q) / <b>^2
-# S(Q) = I_coh(Q) - sum c_i|b_i|^2 / |c_ib_i|^2 + 1
-=======
-    q_angles = 4 * math.pi * np.sin(np.deg2rad(angles)) / wavelength
-    difference = np.abs(q_angles-angles)
-    closest_data = angles[np.argmin(np.abs(q_angles-angles))]
-    return  data[data['2theta'] == closest_data]['Intensity'].iloc[0]
->>>>>>> 49958a70cf2e8ebb2096de702d137e53d5a3826e
+# THE MATH
+def S(Q):
+    return I(Q) / (b(Q)**2)
 
-def S(Q, data):
-    return I(Q, data) / b(Q)**2
+def F(Q):
+    return Q * (S(Q) - 1)
 
-def F(Q, data):
-    return Q * (S(Q, data) - 1)
-
-def pdf(r, data):
+def pdf(r):
     """Returns the Pair Distribution Function evaluated at distance r"""
-<<<<<<< HEAD
-    def func(Q):
-        return Q * (S(Q) - 1) * np.sin(Q*r)
-    return 2 / math.pi * quad(func, Q_min, Q_max)
-=======
-    Q_vals = (4 * math.pi * np.sin(np.deg2rad(angles / 2))) / wavelength
-    Q_min, Q_max = min(Q_vals), max(Q_vals)
     res = np.zeros_like(r)
     for i, val in enumerate(r):
-        y, err = integrate.quad(lambda q: F(q, data) * np.sin(q*val), Q_min, Q_max)
-        res[i] = y
+        y, err = integrate.quad(lambda q: F(q) * np.sin(q*val), Q_min, Q_max)
+        res[i] = 2 / math.pi * y
     return res
 
-def plot_pdf(r_min, r_max, data):
+
+# THE PLOTTING
+def plot_pdf(r_min, r_max):
     plt.figure()
     r = np.linspace(r_min, r_max, 100)
-    plt.plot(r, pdf(r, data))
+    plt.plot(r, pdf(r))
 
-    plt.xlabel(r'r', fontsize=16, labelpad=10)
-    plt.ylabel('Density', fontsize=16, labelpad=12)
+    plt.xlabel(r'r (Å)', fontsize=16, labelpad=10)
+    plt.ylabel('g(r)', fontsize=16, labelpad=12)
 
     plt.tight_layout()
     plt.show()
 
-struc = mg.core.Structure.from_file('MnO.cif')
-min_angle, max_angle = 10.0, 80.0
-wavelength = 1.5406
-calculator = xrd.XRDCalculator(wavelength=wavelength)
-pattern = calculator.get_pattern(struc, two_theta_range=(min_angle, max_angle))
-angles, intensities = pattern.x, pattern.y
-data = pd.DataFrame(list(zip(angles, intensities)), columns=['2theta', 'Intensity'])
-
-plot_pdf(0, 5, data)
->>>>>>> 49958a70cf2e8ebb2096de702d137e53d5a3826e
+#plot_pdf(0, 10)
+print(S(100))
