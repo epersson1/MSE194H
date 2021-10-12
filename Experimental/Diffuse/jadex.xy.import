@@ -1,0 +1,14 @@
+ds = 
+mc = 2
+ms = True
+sc = False
+tz = True
+xc = 0, 0, 0, -1, -1
+xb = 10.0
+xs = 0.01
+xt = 1.0
+wl = 1.54059Å
+xm = 1.0
+ym = 1.0
+kv = 20.0
+sp = 0, 0
