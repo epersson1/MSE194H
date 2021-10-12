@@ -90,4 +90,4 @@ min_angle, max_angle = 10.0, 80.0
 x = np.linspace(min_angle, max_angle, 4501)
 y = get_pattern(struc, min_angle, max_angle)
 
-plot_pattern(x, y)
+#plot_pattern(x, y)
