@@ -1,15 +1,15 @@
 from pymatgen.analysis.diffraction import xrd
-from scipy.ndimage import gaussian_filter1d
 import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import pymatgen as mg
 import numpy as np
 import pandas as pd
-from IPython.display import display
 import json
 import random
 import math
+
 from gen_xrd import get_pattern
+import re
 
 
 # THE DATA - SIMULATED
@@ -38,7 +38,7 @@ with open(path + structure + '.xy', 'r') as f:
                 two_angles.append(float(vals[0]))
                 intensities.append(float(vals[1].strip('\n')))
             else:
-                print(vals)
+                print(vals[0])
 two_angles = np.array(two_angles)
 intensities = np.array(intensities)
 
@@ -57,7 +57,7 @@ def I(Q):
 
 # THE THINGS YOU CALCULATE FROM THE MATERIAL
 def scattering_factors():
-    ions = ['Mn', 'O']
+    ions = re.findall('[A-Z][^A-Z]*', structure)
     form_factors = pd.read_csv('atomic_form_factors.csv')
     factors = []
     for i in ions:
