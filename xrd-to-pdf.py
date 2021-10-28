@@ -12,7 +12,7 @@ from gen_xrd import get_pattern
 import re
 
 
-# THE DATA - SIMULATED
+# Simulate XRD Data
 # struc = mg.core.Structure.from_file('MnO.cif')
 #
 # min_angle, max_angle = 10.0, 80.0
@@ -23,7 +23,7 @@ import re
 
 
 
-# THE DATA - EXPERIMENTAL
+# EXperimental XRD Data
 structure = 'MnO'
 path = 'Experimental/Clean/'
 two_angles, intensities = [], []
@@ -36,7 +36,7 @@ with open(path + structure + '.xy', 'r') as f:
             vals = line.split("\t")
             if len(vals) == 2:
                 two_angles.append(float(vals[0]))
-                intensities.append(float(vals[1].strip('\n')))
+                intensities.append(float(vals[1].strip('\n'))) #TODO: I(o) and I(b) implementation
             else:
                 print(vals[0])
 two_angles = np.array(two_angles)
@@ -50,14 +50,14 @@ Q_min, Q_max = min(Q_vals), max(Q_vals)
 
 
 def I(Q):
-    """Return value if Q has been observed, else 0"""
+    """Returns intensity at Q"""
     if Q in Q_vals:
         return intensities[np.argmin(np.abs(Q - Q_vals))]
     return 0
 
-# THE THINGS YOU CALCULATE FROM THE MATERIAL
 def scattering_factors():
-    ions = re.findall('[A-Z][^A-Z]*', structure)
+    """Returns a mapping of scattering factors for each ion in material"""
+    ions = re.findall('[A-Z][^A-Z]*', structure) #TODO: Implement multiple of same ion (i.e. O2)
     form_factors = pd.read_csv('atomic_form_factors.csv')
     factors = []
     for i in ions:
@@ -82,15 +82,17 @@ def b(q):
     return np.mean(vals)
 
 
-# THE MATH
+# Calculation
 def S(Q):
+    """Structure Function"""
     return I(Q) / (b(Q)**2)
 
 def F(Q):
+    """Fourier Transform"""
     return Q * (S(Q) - 1)
 
 def pdf(r):
-    """Returns the Pair Distribution Function evaluated at distance r"""
+    """Returns the Pair Distribution Function evaluated at distance r (Å)"""
     res = np.zeros_like(r)
     for i, val in enumerate(r):
         y, err = integrate.quad(lambda q: F(q) * np.sin(q*val), Q_min, Q_max)
@@ -98,7 +100,7 @@ def pdf(r):
     return res
 
 
-# THE PLOTTING
+# Plotting
 def plot_pdf(r_min, r_max):
     plt.figure()
     r = np.linspace(r_min, r_max, 1000)
