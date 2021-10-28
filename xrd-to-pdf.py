@@ -48,18 +48,8 @@ Q_vals = (4 * math.pi * np.sin(np.deg2rad(two_angles/2))) / wavelength
 Q_min, Q_max = min(Q_vals), max(Q_vals)
 
 
-def I1(Q, tol = 0.075):
-    """If there is a value in the dataset close to Q, return its intensity. Else, 0"""
-    distance = min(np.abs(Q - Q_vals))
-    if distance < tol:
-        return intensities[np.argmin(np.abs(Q - Q_vals))]
-    return 0
 
-def I2(Q):
-    """Return the intensity of the value in the dataset closest to Q"""
-    return intensities[np.argmin(np.abs(Q - Q_vals))]
-
-def I3(Q):
+def I(Q):
     """Return value if Q has been observed, else 0"""
     if Q in Q_vals:
         return intensities[np.argmin(np.abs(Q - Q_vals))]
@@ -80,11 +70,10 @@ def scattering_factors():
         c = row['c'].iloc[0]
         factors.append((a,b,c))
     return dict(zip(ions, factors))
-
 factors = scattering_factors()
+
 def b(q):
     """Returns the average scattering amplitude of the material"""
-    # NOTE: this is confirmed correct via the webpage
     vals = []
     for tup in factors.values():
         a,b,c = tup
@@ -95,7 +84,7 @@ def b(q):
 
 # THE MATH
 def S(Q):
-    return I3(Q) / (b(Q)**2)
+    return I(Q) / (b(Q)**2)
 
 def F(Q):
     return Q * (S(Q) - 1)
@@ -112,7 +101,7 @@ def pdf(r):
 # THE PLOTTING
 def plot_pdf(r_min, r_max):
     plt.figure()
-    r = np.linspace(r_min, r_max, 100)
+    r = np.linspace(r_min, r_max, 1000)
     plt.plot(r, pdf(r))
 
     plt.xlabel(r'r (Å)', fontsize=16, labelpad=10)
